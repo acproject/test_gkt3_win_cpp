@@ -1,12 +1,10 @@
-#include <time.h>     // 提供 time_t 类型
-#include <stdint.h>
 #include <gtk/gtk.h>
  // 提供 intptr_t, uintptr_t 类型
 // 按钮点击回调函数
 static void on_button_clicked(GtkWidget *widget, gpointer data) {
-    GtkLabel *label = (GtkLabel *)data;
+    auto label = static_cast<GtkLabel *>(data);
     auto now = time(NULL);
-    auto *time_str = ctime(&now);
+    auto* time_str = ctime(&now);
     gtk_label_set_text(label, time_str);
 }
 
