@@ -1,0 +1,44 @@
+# 编译构建相关
+build/
+cmake-build-*/
+bin/
+lib/
+obj/
+*.o
+*.a
+*.dll
+*.exe
+*.so
+*.dylib
+
+# CMake 自动生成文件
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CPackConfig.cmake
+CPackSourceConfig.cmake
+
+# IDE 生成的配置文件（如 CLion）
+.idea/
+.vscode/
+*.sln
+*.vcxproj
+*.vcxproj.user
+
+# 日志与临时文件
+*.log
+*.tmp
+*.bak
+
+# 第三方库或依赖（非源码管理内容）
+third_party/
+vendor/
+
+# Windows 特有文件
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Git 包管理器相关
+.gitmodules
