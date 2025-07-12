@@ -5,6 +5,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_C_COMPILER "D:/msys64/usr/bin/gcc.exe")
+set(CMAKE_CXX_COMPILER "D:/msys64/usr/bin/g++.exe")
+
+include_directories("d:/msys64/usr/include")
+
 set(GLib_DIR "D:/msys64/mingw64/share/glib-2.0")
 find_package(PkgConfig REQUIRED)
 

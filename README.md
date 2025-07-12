@@ -24,6 +24,9 @@ test_cpp/
    pacman -S mingw-w64-x86_64-gtk3
 ```
 ```shell
+./cp_dll.sh
+```
+```shell
     mkdir build && cd build
     cmake ..
     cmake --build .
