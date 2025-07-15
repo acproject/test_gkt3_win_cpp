@@ -15,6 +15,70 @@ set(GLib_DIR "E:/vcpkg/installed/x64-windows/share/glib-2.0")
 set(PKG_CONFIG_EXECUTABLE "D:/pkg-config_0.23-2_win64/bin/pkg-config.exe")
 find_package(PkgConfig REQUIRED)
 
+# 查找 OpenCV
+find_package(OpenCV REQUIRED PATHS "E:/vcpkg/installed/x64-windows" NO_DEFAULT_PATH)
+
+# ...（前面的内容保持不变，如设置编译器、GTK 包等）...
+
+# ================== [ LibTorch 设置 ] ==================
+
+# 设置 LibTorch 根目录（请根据你的实际路径修改）
+set(LIBTORCH_ROOT "D:/libtorch")
+
+# ...（前面的内容保持不变，如设置编译器、GTK 包等）...
+
+# ================== [ LibTorch 设置 ] ==================
+
+# 设置 LibTorch 根目录（请根据你的实际路径修改）
+set(LIBTORCH_ROOT "E:/libtorch")
+
+# 自动检测 Debug / Release 模式（默认使用 Release）
+if(NOT DEFINED CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the build type." FORCE)
+endif()
+
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+
+# 设置 Torch 库路径（debug/release 分开）
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(TORCH_LIB_DIR "${LIBTORCH_ROOT}/lib")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(TORCH_LIB_DIR "${LIBTORCH_ROOT}/debug/lib")
+else()
+    message(FATAL_ERROR "Unsupported build type: ${CMAKE_BUILD_TYPE}")
+endif()
+
+# 设置 Torch 头文件路径
+set(TORCH_INCLUDE_DIRS
+        "${LIBTORCH_ROOT}/include"
+        "${LIBTORCH_ROOT}/include/torch/csrc/api/include"
+)
+
+# 查找 LibTorch 必要库
+find_library(TORCH_LIBRARY
+        NAMES torch
+        PATHS ${TORCH_LIB_DIR}
+        REQUIRED
+)
+
+find_library(TORCH_CPU_LIBRARY
+        NAMES torch_cpu
+        PATHS ${TORCH_LIB_DIR}
+        REQUIRED
+)
+
+# 可选：如果你使用 CUDA，请添加 cuda 相关库
+find_library(TORCH_CUDA_LIBRARY NAMES torch_cuda PATHS ${TORCH_LIB_DIR} REQUIRED)
+
+# 设置 TORCH_LIBRARIES
+set(TORCH_LIBRARIES
+        ${TORCH_LIBRARY}
+        ${TORCH_CPU_LIBRARY}
+)
+
+# 如果你使用了分布式训练或其他模块，可以在这里继续添加
+list(APPEND TORCH_LIBRARIES torch_cuda ...)
+
 include_directories("E:/vcpkg/installed/x64-windows/include/glib-2.0")
 include_directories("E:/vcpkg/installed/x64-windows/include/gtk-3.0")
 link_directories("E:/vcpkg/installed/x64-windows/lib")
@@ -38,6 +102,8 @@ string(REGEX MATCHALL "-I[^ ]+" GLIB_INCLUDE_PATHS "${GLIB_CFLAGS}")
 string(REPLACE "-I" "" GLIB_INCLUDE_PATHS "${GLIB_INCLUDE_PATHS}")
 
 add_executable(test_cpp WIN32 main.cpp)
+
+
 target_include_directories(test_cpp PUBLIC gtk-3
         ${glib2_inc}
         ${pando_lib}
@@ -46,6 +112,36 @@ target_include_directories(test_cpp PUBLIC gtk-3
         ${gdk_pixbuf_lib}
         ${atk_lib}
 )
+
+# 使用 OpenCV 和 Torch 头文件
+target_include_directories(test_cpp PUBLIC
+        ${OpenCV_INCLUDE_DIRS}
+        ${TORCH_INCLUDE_DIRS}
+)
+
+# 链接 OpenCV
+target_link_libraries(test_cpp PUBLIC
+        ${OpenCV_LIBS}
+)
+
+# 链接 LibTorch
+target_link_libraries(test_cpp PUBLIC
+        "${TORCH_LIBRARIES}"
+)
+
+
+target_link_directories(test_cpp PRIVATE
+        ${TORCH_LIB_DIR}
+)
+
+# 如果你使用了 CUDA：
+target_link_libraries(
+        test_cpp
+        PUBLIC
+        torch_cuda
+)
+
+
 target_link_libraries(test_cpp PUBLIC
         gtk-3
         gdk-3
