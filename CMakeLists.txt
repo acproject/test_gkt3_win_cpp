@@ -5,26 +5,27 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_C_COMPILER "D:/msys64/usr/bin/gcc.exe")
-set(CMAKE_CXX_COMPILER "D:/msys64/usr/bin/g++.exe")
+set(CMAKE_C_COMPILER "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe")
+set(CMAKE_CXX_COMPILER "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe")
 
-include_directories("d:/msys64/usr/include")
+include_directories("E:/vcpkg/installed/x64-windows/lib/glib-2.0/include")
+include_directories("C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/include")
 
-set(GLib_DIR "D:/msys64/mingw64/share/glib-2.0")
+set(GLib_DIR "E:/vcpkg/installed/x64-windows/share/glib-2.0")
 find_package(PkgConfig REQUIRED)
 
-include_directories("d:/msys64/mingw64/include/glib-2.0")
-include_directories("d:/msys64/mingw64/include/gtk-3.0")
-link_directories("d:/msys64/mingw64/lib")
+include_directories("E:/vcpkg/installed/x64-windows/include/glib-2.0")
+include_directories("E:/vcpkg/installed/x64-windows/include/gtk-3.0")
+link_directories("E:/vcpkg/installed/x64-windows/lib")
+set(PKG_CONFIG_EXECUTABLE "D:/pkg-config_0.23-2_win64/bin/pkg-config.exe")
 
-
-set(glib2_lib "D:/msys64/mingw64/lib/glib-2.0/")
-set(glib2_inc "D:/msys64/mingw64/lib/glib-2.0/include/")
-set(pando_lib "D:/msys64/mingw64/include/pango-1.0")
-set(hb_lib "D:/msys64/mingw64/include/harfbuzz")
-set(cairo_lib "D:/msys64/mingw64/include/cairo")
-set(gdk_pixbuf_lib "D:/msys64/mingw64/include/gdk-pixbuf-2.0")
-set(atk_lib "D:/msys64/mingw64/include/atk-1.0")
+set(glib2_lib "E:/vcpkg/installed/x64-windows/lib/glib-2.0/")
+set(glib2_inc "E:/vcpkg/installed/x64-windows/lib/glib-2.0/include")
+set(pando_lib "E:/vcpkg/installed/x64-windows/include/pango-1.0")
+set(hb_lib "E:/vcpkg/installed/x64-windows/include/harfbuzz")
+set(cairo_lib "E:/vcpkg/installed/x64-windows/include/cairo")
+set(gdk_pixbuf_lib "E:/vcpkg/installed/x64-windows/include/gdk-pixbuf-2.0")
+set(atk_lib "E:/vcpkg/installed/x64-windows/include/atk-1.0")
 
 execute_process(
         COMMAND pkg-config --cflags glib-2.0
@@ -86,10 +87,10 @@ install(TARGETS test_cpp
         RUNTIME DESTINATION bin
 )
 
-# 安装 GTK 运行时 DLL（确保 gtk_dlls 是通过 ldd 收集生成的）
-file(GLOB GTK_DLLS "${CMAKE_SOURCE_DIR}/gtk_dlls/*.dll")
-if(GTK_DLLS)
-    install(FILES ${GTK_DLLS} DESTINATION bin)
-endif()
-
+## 安装 GTK 运行时 DLL（确保 gtk_dlls 是通过 ldd 收集生成的）
+#file(GLOB GTK_DLLS "${CMAKE_SOURCE_DIR}/Release/*.dll")
+#if(GTK_DLLS)
+#    install(FILES ${GTK_DLLS} DESTINATION bin)
+#endif()
+#
 include(CPack)
