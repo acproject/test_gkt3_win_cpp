@@ -7,7 +7,32 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_C_COMPILER "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe")
 set(CMAKE_CXX_COMPILER "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe")
+set(Protobuf_DIR "E:/vcpkg/installed/x64-windows/share/protobuf")
+set(quirc_DIR "E:/vcpkg/installed/x64-windows/share/quirc")
+# 设置 abseil 路径（根据你的实际路径修改）
+set(absl_DIR "E:/vcpkg/installed/x64-windows/lib/cmake/abseil")
+set(absl_DIR "E:/vcpkg/installed/x64-windows/share/abseil")
+find_package(Protobuf REQUIRED)
+# 设置 TIFF 头文件路径
+set(TIFF_INCLUDE_DIR "E:/vcpkg/installed/x64-windows/include/tiff")
 
+# 设置 TIFF 库文件路径（根据构建类型选择 debug 或 release）
+set(TIFF_LIBRARY "E:/vcpkg/installed/x64-windows/lib/libtiff.lib")
+
+# 如果你使用 Debug 构建：
+# set(TIFF_LIBRARY_DEBUG "E:/vcpkg/installed/x64-windows/debug/lib/libtiff.lib")
+
+# 将 TIFF 标记为已找到
+set(TIFF_FOUND TRUE)
+
+# 可选：如果你使用的是多配置构建系统（如 Visual Studio），可以这样写：
+if(MSVC)
+    if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(TIFF_LIBRARY "E:/vcpkg/installed/x64-windows/debug/lib/libtiff.lib")
+    else()
+        set(TIFF_LIBRARY "E:/vcpkg/installed/x64-windows/lib/libtiff.lib")
+    endif()
+endif()
 include_directories("E:/vcpkg/installed/x64-windows/lib/glib-2.0/include")
 include_directories("C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/include")
 
@@ -28,9 +53,6 @@ set(LIBTORCH_ROOT "D:/libtorch")
 # ...（前面的内容保持不变，如设置编译器、GTK 包等）...
 
 # ================== [ LibTorch 设置 ] ==================
-
-# 设置 LibTorch 根目录（请根据你的实际路径修改）
-set(LIBTORCH_ROOT "E:/libtorch")
 
 # 自动检测 Debug / Release 模式（默认使用 Release）
 if(NOT DEFINED CMAKE_BUILD_TYPE)
@@ -92,6 +114,7 @@ set(cairo_lib "E:/vcpkg/installed/x64-windows/include/cairo")
 set(gdk_pixbuf_lib "E:/vcpkg/installed/x64-windows/include/gdk-pixbuf-2.0")
 set(atk_lib "E:/vcpkg/installed/x64-windows/include/atk-1.0")
 
+
 execute_process(
         COMMAND pkg-config --cflags glib-2.0
         OUTPUT_VARIABLE GLIB_CFLAGS
@@ -130,16 +153,16 @@ target_link_libraries(test_cpp PUBLIC
 )
 
 
-target_link_directories(test_cpp PRIVATE
-        ${TORCH_LIB_DIR}
-)
+#target_link_directories(test_cpp PRIVATE
+#        ${TORCH_LIB_DIR}
+#)
 
-# 如果你使用了 CUDA：
-target_link_libraries(
-        test_cpp
-        PUBLIC
-        torch_cuda
-)
+## 如果你使用了 CUDA：
+#target_link_libraries(
+#        test_cpp
+#        PUBLIC
+#        torch_cuda
+#)
 
 
 target_link_libraries(test_cpp PUBLIC
