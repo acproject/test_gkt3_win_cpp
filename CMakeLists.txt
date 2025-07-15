@@ -12,12 +12,13 @@ include_directories("E:/vcpkg/installed/x64-windows/lib/glib-2.0/include")
 include_directories("C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/include")
 
 set(GLib_DIR "E:/vcpkg/installed/x64-windows/share/glib-2.0")
+set(PKG_CONFIG_EXECUTABLE "D:/pkg-config_0.23-2_win64/bin/pkg-config.exe")
 find_package(PkgConfig REQUIRED)
 
 include_directories("E:/vcpkg/installed/x64-windows/include/glib-2.0")
 include_directories("E:/vcpkg/installed/x64-windows/include/gtk-3.0")
 link_directories("E:/vcpkg/installed/x64-windows/lib")
-set(PKG_CONFIG_EXECUTABLE "D:/pkg-config_0.23-2_win64/bin/pkg-config.exe")
+
 
 set(glib2_lib "E:/vcpkg/installed/x64-windows/lib/glib-2.0/")
 set(glib2_inc "E:/vcpkg/installed/x64-windows/lib/glib-2.0/include")
