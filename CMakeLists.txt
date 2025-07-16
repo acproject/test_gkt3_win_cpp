@@ -47,19 +47,13 @@ find_package(OpenCV REQUIRED PATHS "E:/vcpkg/installed/x64-windows" NO_DEFAULT_P
 
 # ================== [ LibTorch 设置 ] ==================
 
-# 设置 LibTorch 根目录（请根据你的实际路径修改）
+# 设置 LibTorch 根目录
 set(LIBTORCH_ROOT "D:/libtorch")
 
-# ...（前面的内容保持不变，如设置编译器、GTK 包等）...
-
-# ================== [ LibTorch 设置 ] ==================
-
-# 自动检测 Debug / Release 模式（默认使用 Release）
+# 自动检测 Debug / Release 模式
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the build type." FORCE)
 endif()
-
-message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
 # 设置 Torch 库路径（debug/release 分开）
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -77,29 +71,20 @@ set(TORCH_INCLUDE_DIRS
 )
 
 # 查找 LibTorch 必要库
-find_library(TORCH_LIBRARY
-        NAMES torch
-        PATHS ${TORCH_LIB_DIR}
-        REQUIRED
-)
+find_library(TORCH_LIBRARY NAMES torch PATHS ${TORCH_LIB_DIR} REQUIRED)
+find_library(TORCH_CPU_LIBRARY NAMES torch_cpu PATHS ${TORCH_LIB_DIR} REQUIRED)
 
-find_library(TORCH_CPU_LIBRARY
-        NAMES torch_cpu
-        PATHS ${TORCH_LIB_DIR}
-        REQUIRED
-)
-
-# 可选：如果你使用 CUDA，请添加 cuda 相关库
-find_library(TORCH_CUDA_LIBRARY NAMES torch_cuda PATHS ${TORCH_LIB_DIR} REQUIRED)
+# 如果你使用了 CUDA，请确保 torch_cuda.lib 存在
+# find_library(TORCH_CUDA_LIBRARY NAMES torch_cuda PATHS ${TORCH_LIB_DIR} REQUIRED)
 
 # 设置 TORCH_LIBRARIES
-set(TORCH_LIBRARIES
-        ${TORCH_LIBRARY}
-        ${TORCH_CPU_LIBRARY}
-)
+set(TORCH_LIBRARIES ${TORCH_LIBRARY} ${TORCH_CPU_LIBRARY})
 
-# 如果你使用了分布式训练或其他模块，可以在这里继续添加
-list(APPEND TORCH_LIBRARIES torch_cuda ...)
+# 如果你使用了 CUDA，启用下面一行
+# set(TORCH_LIBRARIES ${TORCH_LIBRARY} ${TORCH_CPU_LIBRARY} ${TORCH_CUDA_LIBRARY})
+
+message(STATUS "TORCH_INCLUDE_DIRS = ${TORCH_INCLUDE_DIRS}")
+message(STATUS "TORCH_LIBRARIES = ${TORCH_LIBRARIES}")
 
 include_directories("E:/vcpkg/installed/x64-windows/include/glib-2.0")
 include_directories("E:/vcpkg/installed/x64-windows/include/gtk-3.0")
@@ -153,16 +138,16 @@ target_link_libraries(test_cpp PUBLIC
 )
 
 
-#target_link_directories(test_cpp PRIVATE
-#        ${TORCH_LIB_DIR}
-#)
+target_link_directories(test_cpp PRIVATE
+        ${TORCH_LIB_DIR}
+)
 
 ## 如果你使用了 CUDA：
-#target_link_libraries(
-#        test_cpp
-#        PUBLIC
-#        torch_cuda
-#)
+target_link_libraries(
+        test_cpp
+        PUBLIC
+        torch_cuda
+)
 
 
 target_link_libraries(test_cpp PUBLIC
@@ -180,7 +165,6 @@ target_link_libraries(test_cpp PUBLIC
         gdk_pixbuf-2.0)
 set_target_properties(test_cpp PROPERTIES WIN32_EXECUTABLE TRUE)
 # 设置 CPack 包信息
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,.")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "0")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
@@ -188,6 +172,10 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "My GTK+ Application")
 set(CPACK_PACKAGE_VENDOR "Your Company Name")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "MyGTKApp")
 set(CPACK_PACKAGE_NAME "test_cpp") # 明确指定包名，避免默认值导致问题
+# 设置安装路径为 packaging/Release
+set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/Release")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/Program Files/MyApp")
+
 
 # NSIS 特定设置
 set(CPACK_NSIS_DISPLAY_NAME "My GTK+ Application") # 安装界面显示名称
@@ -198,19 +186,18 @@ set(CPACK_NSIS_MODIFY_PATH ON) # 允许用户修改安装路径
 set(CPACK_NSIS_ENABLE_UNINSTALL_ON_REINSTALL ON) # 覆盖安装时自动卸载旧版本
 
 # 根据平台选择合适的打包格式
-if(WIN32)
-    set(CPACK_GENERATOR "NSIS") # Windows 上可以使用 NSIS 生成安装程序
-endif()
+set(CPACK_GENERATOR "NSIS") # Windows 上可以使用 NSIS 生成安装程序
+# 自动收集 Release/bin/ 下的所有 DLL（根据你的实际 DLL 路径调整）
+file(GLOB GTK_DLLS "${CMAKE_SOURCE_DIR}/Release/*.dll")
+file(GLOB OPENCV_DLLS "E:/vcpkg/installed/x64-windows/bin/*.dll")
+file(GLOB LIBTORCH_DLLS "D:/libtorch/lib/*.dll")
+# 合并所有 DLL
+set(ALL_DLLS ${GTK_DLLS} ${OPENCV_DLLS} ${LIBTORCH_DLLS})
 
-# 安装可执行文件
-install(TARGETS test_cpp
-        RUNTIME DESTINATION bin
+# 安装 DLL 到 bin 目录
+install(FILES ${ALL_DLLS}
+        DESTINATION bin
+        OPTIONAL
 )
 
-## 安装 GTK 运行时 DLL（确保 gtk_dlls 是通过 ldd 收集生成的）
-#file(GLOB GTK_DLLS "${CMAKE_SOURCE_DIR}/Release/*.dll")
-#if(GTK_DLLS)
-#    install(FILES ${GTK_DLLS} DESTINATION bin)
-#endif()
-#
 include(CPack)
