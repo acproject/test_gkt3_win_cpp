@@ -37,7 +37,21 @@ bool load_model(AppData *data, const std::string &model_path) {
     } catch (const c10::Error &e) {
         std::string error_msg = "Model load failed: " + e.msg();
         std::cerr << error_msg << std::endl;
-        std::ofstream log_file("load_error.log");
+        std::ofstream log_file("load_error.log", std::ios::app);
+        auto cout_buf = std::cout.rdbuf();
+        std::cout.rdbuf(log_file.rdbuf()); // 重定向std::cout到文件
+
+        // 这里是模型加载代码
+        try {
+            data->module = torch::jit::load(model_path);
+            data->model_loaded = true;
+            std::cout << "Model loaded successfully from " << model_path << std::endl;
+        } catch (const c10::Error& e) {
+            std::cout << "Model load failed: " << e.what() << std::endl;
+        }
+
+        std::cout.rdbuf(cout_buf); // 恢复std::cout
+        log_file.close();
         if (log_file.is_open()) {
             log_file << error_msg << std::endl;
             log_file.close();
@@ -184,6 +198,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     char **argv = __argv;
 #else
 int main(int argc, char **argv) {
+    // 日志重定向到app_log.log
+    std::ofstream app_log_file("app_log.log", std::ios::app);
+    auto cout_buf = std::cout.rdbuf();
+    std::cout.rdbuf(app_log_file.rdbuf());
 #endif
     GtkApplication *app = gtk_application_new("org.example.app", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
