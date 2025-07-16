@@ -12,6 +12,8 @@
 #include <ctime>
 #include <iostream>
 #include <fstream>
+#include <nlohmann/json.hpp>
+#include <map>
 // AppData 结构体用于封装应用状态
 typedef struct {
     GtkWidget *result_label;
@@ -19,10 +21,11 @@ typedef struct {
     GdkPixbuf *pixbuf;
     torch::jit::script::Module module;
     bool model_loaded;
+    cv::Mat persistent_image; // 新增，确保图像数据生命周期
 } AppData;
 
 bool load_model(AppData *data, const std::string &model_path) {
-    std::cout << "[LOG] 开始加载模型: " << model_path << std::endl;
+    std::cout << "[LOG] 开始加载model" << model_path << std::endl;
     try {
         data->module = torch::jit::load(model_path);
         if (torch::cuda::is_available()) {
@@ -60,6 +63,20 @@ bool load_model(AppData *data, const std::string &model_path) {
     }
 }
 
+// 全局类别标签映射
+std::map<int, std::string> class_labels;
+
+// 加载类别标签映射
+void load_class_labels(const std::string& json_path) {
+    std::ifstream in(json_path);
+    nlohmann::json j;
+    in >> j;
+    class_labels.clear();
+    for (auto& [key, value] : j.items()) {
+        int idx = std::stoi(key);
+        class_labels[idx] = value[1];
+    }
+}
 void process_image_and_predict(AppData *data, const std::string& image_path) {
     std::ofstream log_file("app_log.log",std::ios::app);
     auto cout_buf = std::cout.rdbuf();
@@ -124,22 +141,27 @@ void process_image_and_predict(AppData *data, const std::string& image_path) {
         return;
     }
 
-    char buffer[100];
-    sprintf(buffer, "预测类别: %d", predicted_class);
-    gtk_label_set_text(GTK_LABEL(data->result_label), buffer);
+    // 显示类别标签
+    std::string label_str = "预测类别: " + std::to_string(predicted_class);
+    if (!class_labels.empty() && class_labels.count(predicted_class)) {
+        label_str += " (" + class_labels[predicted_class] + ")";
+    }
+    gtk_label_set_text(GTK_LABEL(data->result_label), label_str.c_str());
 
     std::cout.rdbuf(cout_buf);
     log_file.close();
 
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
+    // 修正：将image变量提升作用域，确保数据生命周期
+    data->persistent_image = image.clone();
     data->pixbuf = gdk_pixbuf_new_from_data(
-        image.data,
+        data->persistent_image.data,
         GDK_COLORSPACE_RGB,
         FALSE,
         8,
-        image.cols,
-        image.rows,
-        image.step,
+        data->persistent_image.cols,
+        data->persistent_image.rows,
+        data->persistent_image.step,
         NULL,
         NULL
     );
@@ -198,6 +220,8 @@ static void activate(GtkApplication *app, gpointer user_data) {
     std::cout << "[LOG] 进入 activate 回调" << std::endl;
     AppData *data = g_new0(AppData, 1);
     data->model_loaded = false;
+    // 启动时加载类别标签
+    load_class_labels("imagenet_class_index.json");
     GtkWidget *window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "GTK4 示例程序");
     gtk_window_set_default_size(GTK_WINDOW(window), 600, 800);
@@ -227,12 +251,13 @@ static void activate(GtkApplication *app, gpointer user_data) {
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     int argc = __argc;
     char **argv = __argv;
+    std::ofstream app_log_file("app_log.log", std::ios::app);
+    auto cout_buf = std::cout.rdbuf();
+    std::cout.rdbuf(app_log_file.rdbuf());
 #else
 int main(int argc, char **argv) {
     // 日志重定向到app_log.log
     std::ofstream app_log_file("app_log.log", std::ios::app);
-    auto cout_buf = std::cout.rdbuf();
-    std::cout.rdbuf(app_log_file.rdbuf());
 #endif
     GtkApplication *app = gtk_application_new("org.example.app", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);

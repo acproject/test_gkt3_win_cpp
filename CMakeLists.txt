@@ -42,6 +42,9 @@ find_package(PkgConfig REQUIRED)
 # 查找 OpenCV
 find_package(OpenCV REQUIRED PATHS "E:/vcpkg/installed/x64-windows" NO_DEFAULT_PATH)
 
+# 添加 nlohmann_json 支持
+find_package(nlohmann_json CONFIG REQUIRED)
+
 # ================== [ LibTorch 设置 ] ==================
 # 设置 LibTorch 根目录
 set(LIBTORCH_ROOT "D:/libtorch")
@@ -140,6 +143,8 @@ target_link_libraries(test_cpp PUBLIC
         c10
 )
 
+# 链接 nlohmann_json
+target_link_libraries(test_cpp PUBLIC nlohmann_json::nlohmann_json)
 
 target_link_directories(test_cpp PRIVATE
         ${TORCH_LIB_DIR}
