@@ -61,15 +61,27 @@ bool load_model(AppData *data, const std::string &model_path) {
 }
 
 void process_image_and_predict(AppData *data, const std::string& image_path) {
+    std::ofstream log_file("app_log.log",std::ios::app);
+    auto cout_buf = std::cout.rdbuf();
+    std::cout.rdbuf(log_file.rdbuf());
+
+    std::cout << "[LOG]开始处理图像：" << image_path << std::endl;
     if (!data->model_loaded) {
+        std::cout << "[LOG]模型未加载:"  << std::endl;
         gtk_label_set_text(GTK_LABEL(data->result_label), "请先加载模型");
+        std::cout.rdbuf(cout_buf);
+        log_file.close();
         return;
     }
     cv::Mat image = cv::imread(image_path);
     if (image.empty()) {
+        std::cout << "[ERROR] 图像加载失败: " << image_path << std::endl;
         gtk_label_set_text(GTK_LABEL(data->result_label), "图像加载失败");
+        std::cout.rdbuf(cout_buf);
+        log_file.close();
         return;
     }
+    std::cout << "[LOG] 图像加载成功" << std::endl;
 
     if (data->pixbuf) {
         g_object_unref(data->pixbuf);
@@ -82,8 +94,10 @@ void process_image_and_predict(AppData *data, const std::string& image_path) {
     cv::Mat float_img;
     resized.convertTo(float_img, CV_32F, 1.0 / 255.0);
 
+    std::cout << "[LOG] 开始创建Tensor" << std::endl;
     torch::Tensor tensor_img = torch::from_blob(float_img.data, {1, 224, 224, 3}, torch::kFloat32);
     tensor_img = tensor_img.permute({0, 3, 1, 2});
+    std::cout << "[LOG] 张量创建成功" << std::endl;
 
     if (torch::cuda::is_available()) {
         tensor_img = tensor_img.to(torch::kCUDA);
@@ -91,14 +105,31 @@ void process_image_and_predict(AppData *data, const std::string& image_path) {
 
     std::vector<torch::jit::IValue> inputs;
     inputs.push_back(tensor_img);
-    at::Tensor output = data->module.forward(inputs).toTensor();
+    std::cout << "[LOG] start predicting..." << std::endl;
+    int predicted_class = -1;
+    try {
+        at::Tensor output = data->module.forward(inputs).toTensor();
+        std::cout << "[LOG] 模型预测完成" << std::endl;
 
-    auto max_result = output.argmax(1);
-    int predicted_class = max_result.item<int>();
+        auto max_result = output.argmax(1);
+        predicted_class = max_result.item<int>();
+        std::cout << "[LOG] 模型预测完成 " << std::endl;
+        predicted_class = max_result.item<int>();
+        std::cout << "[LOG] 模型预测类别: " << predicted_class << std::endl;
+    } catch (const c10::Error& e) {
+        std::cout << "[ERROR] 模型预测失败 " << e.what() << std::endl;
+        gtk_label_set_text(GTK_LABEL(data->result_label), "预测失败");
+        std::cout.rdbuf(cout_buf);
+        log_file.close();
+        return;
+    }
 
     char buffer[100];
     sprintf(buffer, "预测类别: %d", predicted_class);
     gtk_label_set_text(GTK_LABEL(data->result_label), buffer);
+
+    std::cout.rdbuf(cout_buf);
+    log_file.close();
 
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
     data->pixbuf = gdk_pixbuf_new_from_data(
@@ -136,11 +167,11 @@ static void on_image_button_clicked(GtkWidget *widget, gpointer user_data) {
 }
 
 static void on_window_destroy(GtkWidget *widget, gpointer user_data) {
-        AppData *data = (AppData *)user_data;
-        if (data->pixbuf) {
-            g_object_unref(data->pixbuf);
-        }
-        g_free(data);
+    AppData *data = (AppData *)user_data;
+    if (data->pixbuf) {
+        g_object_unref(data->pixbuf);
+    }
+    g_free(data);
 }
 
 static void on_load_model_clicked(GtkWidget *widget, gpointer user_data) {
