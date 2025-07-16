@@ -23,6 +23,12 @@ bool load_model(AppData *data, const std::string &model_path) {
     std::cout << "[LOG] 开始加载模型: " << model_path << std::endl;
     try {
         data->module = torch::jit::load(model_path);
+        if (torch::cuda::is_available()) {
+            std::cout << "[LOG] CUDA可用，模型转移到GPU" << std::endl;
+            data->module.to(torch::kCUDA);
+        } else {
+            std::cout << "[LOG] CUDA不可用，使用CPU" << std::endl;
+        }
         std::cout << "[LOG] 模型加载成功" << std::endl;
         return true;
     } catch (const c10::Error &e) {
@@ -51,6 +57,10 @@ void process_image_and_predict(AppData *data, const std::string& image_path) {
 
     torch::Tensor tensor_img = torch::from_blob(float_img.data, {1, 224, 224, 3}, torch::kFloat32);
     tensor_img = tensor_img.permute({0, 3, 1, 2});
+
+    if (torch::cuda::is_available()) {
+        tensor_img = tensor_img.to(torch::kCUDA);
+    }
 
     std::vector<torch::jit::IValue> inputs;
     inputs.push_back(tensor_img);
@@ -110,10 +120,12 @@ static void activate(GtkApplication *app, gpointer user_data) {
     std::cout << "[LOG] 进入 activate 回调" << std::endl;
     AppData *data = g_new(AppData, 1);
     GtkWidget *window = gtk_application_window_new(app);
-    std::string model_path = "resnet18.pth";
+    std::string *model_path = new std::string("resnet18.pth");
     GtkNativeDialog *native_dialog = (GtkNativeDialog *)gtk_file_chooser_native_new("选择模型文件", GTK_WINDOW(window), GTK_FILE_CHOOSER_ACTION_OPEN, "_打开", "_取消");
     g_signal_connect(native_dialog, "response", G_CALLBACK(+[](GtkNativeDialog *dialog, gint response_id, gpointer user_data) {
         std::string *model_path = static_cast<std::string *>(user_data);
+        AppData *data = g_new(AppData, 1);
+        GtkWidget *window = gtk_application_window_new(GTK_APPLICATION(gtk_window_get_application(GTK_WINDOW(dialog))));
         if (response_id == GTK_RESPONSE_ACCEPT) {
             GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dialog));
             if (file) {
@@ -124,41 +136,43 @@ static void activate(GtkApplication *app, gpointer user_data) {
             }
         }
         gtk_window_destroy(GTK_WINDOW(GTK_NATIVE_DIALOG(dialog)));
-    }), &model_path);
+        if (!load_model(data, *model_path)) {
+            GtkWidget *error_dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "加载模型失败: %s", model_path->c_str());
+            gtk_native_dialog_show(GTK_NATIVE_DIALOG(error_dialog));
+            g_signal_connect(error_dialog, "response", G_CALLBACK(+[](GtkNativeDialog *dialog, gint response_id, gpointer user_data) {
+                gtk_window_destroy(GTK_WINDOW(GTK_NATIVE_DIALOG(dialog)));
+            }), NULL);
+            g_free(model_path);
+            return;
+        }
+        GtkWidget *message_dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "模型已加载，准备创建窗口");
+        gtk_window_set_title(GTK_WINDOW(window), "GTK4 示例程序");
+        gtk_native_dialog_show(GTK_NATIVE_DIALOG(message_dialog));
+        g_signal_connect(message_dialog, "response", G_CALLBACK(+[](GtkNativeDialog *dialog, gint response_id, gpointer user_data) {
+            gtk_window_destroy(GTK_WINDOW(GTK_NATIVE_DIALOG(dialog)));
+        }), NULL);
+        std::cout << "[LOG] 模型已加载，准备创建窗口" << std::endl;
+        gtk_window_set_default_size(GTK_WINDOW(window), 300, 200);
+        GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+        gtk_widget_set_margin_start(box, 20);
+        gtk_widget_set_margin_end(box, 20); 
+        gtk_widget_set_margin_top(box, 20);
+        gtk_widget_set_margin_bottom(box, 20);
+        gtk_window_set_child(GTK_WINDOW(window), box);
+        data->image_area = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+        gtk_box_append(GTK_BOX(box), data->image_area);
+        data->result_label = gtk_label_new("等待图像");
+        gtk_box_append(GTK_BOX(box), data->result_label);
+        GtkWidget *image_button = gtk_button_new_with_label("选择图像");
+        g_signal_connect(image_button, "clicked", G_CALLBACK(on_image_button_clicked), data);
+        gtk_box_append(GTK_BOX(box), image_button);
+        std::cout << "[LOG] 所有控件已创建" << std::endl;
+        g_signal_connect(window, "destroy", G_CALLBACK(on_window_destroy), data);
+        gtk_widget_set_visible(window, TRUE);
+        std::cout << "[LOG] 窗口已设置为可见" << std::endl;
+        g_free(model_path);
+    }), model_path);
     gtk_native_dialog_show(native_dialog);
-    if (!load_model(data, model_path)) {
-        GtkWidget *error_dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "加载模型失败: %s", model_path.c_str());
-        gtk_native_dialog_show(GTK_NATIVE_DIALOG(error_dialog));
-    g_signal_connect(error_dialog, "response", G_CALLBACK(+[](GtkNativeDialog *dialog, gint response_id, gpointer user_data) {
-        gtk_window_destroy(GTK_WINDOW(GTK_NATIVE_DIALOG(dialog)));
-    }), NULL);
-        return;
-    }
-    GtkWidget *message_dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "模型已加载，准备创建窗口");
-    gtk_window_set_title(GTK_WINDOW(window), "GTK4 示例程序");
-    gtk_native_dialog_show(GTK_NATIVE_DIALOG(message_dialog));
-    g_signal_connect(message_dialog, "response", G_CALLBACK(+[](GtkNativeDialog *dialog, gint response_id, gpointer user_data) {
-        gtk_window_destroy(GTK_WINDOW(GTK_NATIVE_DIALOG(dialog)));
-    }), NULL);
-    std::cout << "[LOG] 模型已加载，准备创建窗口" << std::endl;
-    gtk_window_set_default_size(GTK_WINDOW(window), 300, 200);
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_widget_set_margin_start(box, 20);
-    gtk_widget_set_margin_end(box, 20); 
-    gtk_widget_set_margin_top(box, 20);
-    gtk_widget_set_margin_bottom(box, 20);
-    gtk_window_set_child(GTK_WINDOW(window), box);
-    data->image_area = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_box_append(GTK_BOX(box), data->image_area);
-    data->result_label = gtk_label_new("等待图像");
-    gtk_box_append(GTK_BOX(box), data->result_label);
-    GtkWidget *image_button = gtk_button_new_with_label("选择图像");
-    g_signal_connect(image_button, "clicked", G_CALLBACK(on_image_button_clicked), data);
-    gtk_box_append(GTK_BOX(box), image_button);
-    std::cout << "[LOG] 所有控件已创建" << std::endl;
-    g_signal_connect(window, "destroy", G_CALLBACK(on_window_destroy), data);
-    gtk_widget_set_visible(window, TRUE);
-    std::cout << "[LOG] 窗口已设置为可见" << std::endl;
 }
 
 #ifdef _WIN32
