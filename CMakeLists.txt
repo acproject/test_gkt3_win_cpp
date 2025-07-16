@@ -196,10 +196,16 @@ set(CPACK_NSIS_ENABLE_UNINSTALL_ON_REINSTALL ON) # 覆盖安装时自动卸载�
 set(CPACK_GENERATOR "NSIS") # Windows 上可以使用 NSIS 生成安装程序
 # 自动收集 Release/bin/ 下的所有 DLL（根据你的实际 DLL 路径调整）
 file(GLOB GTK_DLLS "${CMAKE_SOURCE_DIR}/Release/*.dll")
-file(GLOB OPENCV_DLLS "E:/vcpkg/installed/x64-windows/bin/*.dll")
-file(GLOB LIBTORCH_DLLS "D:/libtorch/lib/*.dll" "D:/libtorch/bin/*.dll")
-# 合并所有 DLL
-set(ALL_DLLS ${GTK_DLLS} ${OPENCV_DLLS} ${LIBTORCH_DLLS})
+file(GLOB OPENCV_DLLS "E:/vcpkg/installed/x64-windows/bin/opencv_*.dll")
+file(GLOB LIBTORCH_DLLS "D:/libtorch/lib/*.dll")
+# 合并所有 DLL（排除CPack临时目录和自身生成的包）
+set(ALL_DLLS)
+foreach(dll ${GTK_DLLS} ${OPENCV_DLLS} ${LIBTORCH_DLLS})
+    string(FIND "${dll}" "_CPack_Packages" found)
+    if(found EQUAL -1)
+        list(APPEND ALL_DLLS ${dll})
+    endif()
+endforeach()
 
 # 安装 DLL 到 bin 目录
 install(FILES ${ALL_DLLS}
@@ -207,4 +213,13 @@ install(FILES ${ALL_DLLS}
         OPTIONAL
 )
 
+# 排除_CPack_Packages目录，防止NSIS递归打包自身
+install(CODE "file(REMOVE_RECURSE \"${CMAKE_INSTALL_PREFIX}/_CPack_Packages\")")
+
+# 构建后自动拷贝 DLL 到输出目录（仅限本地开发调试，打包用install）
+add_custom_command(TARGET test_cpp POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${LIBTORCH_DLLS}
+        $<TARGET_FILE_DIR:test_cpp>
+)
 include(CPack)
