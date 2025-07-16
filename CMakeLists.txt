@@ -192,7 +192,7 @@ set(CPACK_GENERATOR "NSIS") # Windows 上可以使用 NSIS 生成安装程序
 # 自动收集 Release/bin/ 下的所有 DLL（根据你的实际 DLL 路径调整）
 file(GLOB GTK_DLLS "${CMAKE_SOURCE_DIR}/Release/*.dll")
 file(GLOB OPENCV_DLLS "E:/vcpkg/installed/x64-windows/bin/*.dll")
-file(GLOB LIBTORCH_DLLS "D:/libtorch/lib/*.dll")
+file(GLOB LIBTORCH_DLLS "D:/libtorch/lib/*.dll" "D:/libtorch/bin/*.dll")
 # 合并所有 DLL
 set(ALL_DLLS ${GTK_DLLS} ${OPENCV_DLLS} ${LIBTORCH_DLLS})
 
