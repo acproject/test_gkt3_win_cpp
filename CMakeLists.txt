@@ -194,13 +194,17 @@ set(CPACK_NSIS_ENABLE_UNINSTALL_ON_REINSTALL ON) # 覆盖安装时自动卸载�
 
 # 根据平台选择合适的打包格式
 set(CPACK_GENERATOR "NSIS") # Windows 上可以使用 NSIS 生成安装程序
-# 自动收集 Release/bin/ 下的所有 DLL（根据你的实际 DLL 路径调整）
+# 自动收集 Release/ 下的所有 DLL（根据你的实际 DLL 路径调整）
 file(GLOB GTK_DLLS "${CMAKE_SOURCE_DIR}/Release/*.dll")
-file(GLOB OPENCV_DLLS "E:/vcpkg/installed/x64-windows/bin/opencv_*.dll")
+#message(STATUS "GTK_DLLS"=${GTK_DLLS})
+#file(GLOB OPENCV_DLLS "E:/vcpkg/installed/x64-windows/bin/opencv_*.dll")
 file(GLOB LIBTORCH_DLLS "D:/libtorch/lib/*.dll")
 # 合并所有 DLL（排除CPack临时目录和自身生成的包）
 set(ALL_DLLS)
-foreach(dll ${GTK_DLLS} ${OPENCV_DLLS} ${LIBTORCH_DLLS})
+foreach(dll ${GTK_DLLS}
+#        ${OPENCV_DLLS}             # 应该是vcpkg的包可以自动的获取
+        ${LIBTORCH_DLLS}
+)
     string(FIND "${dll}" "_CPack_Packages" found)
     if(found EQUAL -1)
         list(APPEND ALL_DLLS ${dll})
