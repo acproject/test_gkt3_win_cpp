@@ -89,7 +89,7 @@ pkg_check_modules(GTK4 REQUIRED gtk4)
 
 
 include_directories("E:/vcpkg/installed/x64-windows/include/glib-2.0")
-include_directories("E:/vcpkg/installed/x64-windows/include/gtk-3.0")
+include_directories("E:/vcpkg/installed/x64-windows/include/gtk-4.0")
 link_directories("E:/vcpkg/installed/x64-windows/lib")
 
 
@@ -113,7 +113,7 @@ string(REPLACE "-I" "" GLIB_INCLUDE_PATHS "${GLIB_INCLUDE_PATHS}")
 
 add_executable(test_cpp WIN32 main.cpp)
 
-target_include_directories(test_cpp PUBLIC gtk-3
+target_include_directories(test_cpp PUBLIC gtk-4
         ${glib2_inc}
         ${pando_lib}
         ${hb_lib}
@@ -124,9 +124,9 @@ target_include_directories(test_cpp PUBLIC gtk-3
 
 # 使用 OpenCV 和 Torch 头文件
 target_include_directories(test_cpp PUBLIC
+        ${GTK4_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${TORCH_INCLUDE_DIRS}
-        ${GTK4_INCLUDE_DIRS}
 )
 
 # 链接 OpenCV
@@ -137,6 +137,7 @@ target_link_libraries(test_cpp PUBLIC
 # 链接 LibTorch
 target_link_libraries(test_cpp PUBLIC
         "${TORCH_LIBRARIES}"
+        c10
 )
 
 
@@ -154,7 +155,6 @@ target_link_libraries(
 
 target_link_libraries(test_cpp PUBLIC
         gtk-4
-        gdk-3
         glib-2.0
         gobject-2.0
         gio-2.0
