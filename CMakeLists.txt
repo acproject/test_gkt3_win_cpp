@@ -197,13 +197,14 @@ set(CPACK_GENERATOR "NSIS") # Windows 上可以使用 NSIS 生成安装程序
 # 自动收集 Release/ 下的所有 DLL（根据你的实际 DLL 路径调整）
 file(GLOB GTK_DLLS "${CMAKE_SOURCE_DIR}/Release/*.dll")
 #message(STATUS "GTK_DLLS"=${GTK_DLLS})
-#file(GLOB OPENCV_DLLS "E:/vcpkg/installed/x64-windows/bin/opencv_*.dll")
+file(GLOB OPENCV_DLLS "E:/vcpkg/installed/x64-windows/bin/opencv_*.dll")
 file(GLOB LIBTORCH_DLLS "D:/libtorch/lib/*.dll")
 # 合并所有 DLL（排除CPack临时目录和自身生成的包）
 set(ALL_DLLS)
 foreach(dll ${GTK_DLLS}
-#        ${OPENCV_DLLS}             # 应该是vcpkg的包可以自动的获取
+        ${OPENCV_DLLS}             # 应该是vcpkg的包可以自动的获取
         ${LIBTORCH_DLLS}
+        ${GTK_DLLS}
 )
     string(FIND "${dll}" "_CPack_Packages" found)
     if(found EQUAL -1)
@@ -224,6 +225,8 @@ install(CODE "file(REMOVE_RECURSE \"${CMAKE_INSTALL_PREFIX}/_CPack_Packages\")")
 add_custom_command(TARGET test_cpp POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${LIBTORCH_DLLS}
+        ${GTK_DLLS}
+        ${OPENCV_DLLS}
         $<TARGET_FILE_DIR:test_cpp>
 )
 include(CPack)
