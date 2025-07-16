@@ -220,7 +220,9 @@ install(FILES ${ALL_DLLS}
 
 # 排除_CPack_Packages目录，防止NSIS递归打包自身
 install(CODE "file(REMOVE_RECURSE \"${CMAKE_INSTALL_PREFIX}/_CPack_Packages\")")
-
+install(TARGETS TARGETS test_cpp
+        DESTINATION bin
+        COMPONENT Runtime )
 # 构建后自动拷贝 DLL 到输出目录（仅限本地开发调试，打包用install）
 add_custom_command(TARGET test_cpp POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
