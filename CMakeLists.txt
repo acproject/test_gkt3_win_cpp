@@ -212,23 +212,22 @@ foreach(dll ${GTK_DLLS}
     endif()
 endforeach()
 
-# 安装 DLL 到 bin 目录
-install(FILES ${ALL_DLLS}
-        DESTINATION bin
-        OPTIONAL
-)
-
-# 排除_CPack_Packages目录，防止NSIS递归打包自身
-install(CODE "file(REMOVE_RECURSE \"${CMAKE_INSTALL_PREFIX}/_CPack_Packages\")")
-install(TARGETS TARGETS test_cpp
-        DESTINATION bin
-        COMPONENT Runtime )
-# 构建后自动拷贝 DLL 到输出目录（仅限本地开发调试，打包用install）
+# ================== [ 安装与打包配置 ] ==================
+# 构建后自动拷贝 DLL 到输出目录（仅限本地开发调试）
 add_custom_command(TARGET test_cpp POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${LIBTORCH_DLLS}
         ${GTK_DLLS}
         ${OPENCV_DLLS}
         $<TARGET_FILE_DIR:test_cpp>
 )
+
+# 安装可执行文件和构建后生成的所有 DLL（从构建输出目录）
+install(DIRECTORY ${CMAKE_BINARY_DIR}/Release/
+        DESTINATION bin
+        USE_SOURCE_PERMISSIONS
+        PATTERN ".git*" EXCLUDE)
+
+# 排除 _CPack_Packages 目录（防止NSIS递归打包自身）
+install(CODE "file(REMOVE_RECURSE \"${CMAKE_INSTALL_PREFIX}/_CPack_Packages\")")
 include(CPack)

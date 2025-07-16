@@ -29,7 +29,7 @@ vcpkg integrate install
     mkdir packaging && cd packaging
     cmake "-DCMAKE_C_COMPILER=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe" "-DCMAKE_CXX_COMPILER=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe" -G "Visual Studio 17 2022" -DPKG_CONFIG_EXECUTABLE=d:/pkg-config_0.23-2_win64/bin/pkg-config.exe -DCMAKE_TOOLCHAIN_FILE=E:\vcpkg\scripts\buildsystems\vcpkg.cmake -S E:\workspace\cpp_projects\test_gkt3_win_cpp -B E:\workspace\cpp_projects\test_gkt3_win_cpp\packaging
     cmake --build E:\workspace\cpp_projects\test_gkt3_win_cpp\packaging --target test_cpp --config Release
-    cpack -G NSIS --config ./packaging/CPackConfig.cmake --verbose #or#    cpack -G NSIS --config ./CPackConfig.cmake
+    cpack -G NSIS --config ./packaging/CPackConfig.cmake --verbose #or#    cpack -G NSIS --config ./CPackConfig.cmake --verbose
 ```
 ### 📎 依赖说明
 本项目依赖 GTK3 运行时库；
