@@ -5,23 +5,20 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_C_COMPILER "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe")
-set(CMAKE_CXX_COMPILER "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe")
+# vcpkg 路径配置
 set(Protobuf_DIR "E:/vcpkg/installed/x64-windows/share/protobuf")
 set(quirc_DIR "E:/vcpkg/installed/x64-windows/share/quirc")
-# 设置 abseil 路径（根据你的实际路径修改）
 set(absl_DIR "E:/vcpkg/installed/x64-windows/lib/cmake/abseil")
 set(absl_DIR "E:/vcpkg/installed/x64-windows/share/abseil")
 find_package(Protobuf REQUIRED)
+
 # 设置 TIFF 头文件路径
 set(TIFF_INCLUDE_DIR "E:/vcpkg/installed/x64-windows/include/tiff")
-
 # 设置 TIFF 库文件路径（根据构建类型选择 debug 或 release）
 set(TIFF_LIBRARY "E:/vcpkg/installed/x64-windows/lib/libtiff.lib")
 
 # 如果你使用 Debug 构建：
 # set(TIFF_LIBRARY_DEBUG "E:/vcpkg/installed/x64-windows/debug/lib/libtiff.lib")
-
 # 将 TIFF 标记为已找到
 set(TIFF_FOUND TRUE)
 
@@ -33,9 +30,11 @@ if(MSVC)
         set(TIFF_LIBRARY "E:/vcpkg/installed/x64-windows/lib/libtiff.lib")
     endif()
 endif()
+# 包含路径
 include_directories("E:/vcpkg/installed/x64-windows/lib/glib-2.0/include")
 include_directories("C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/include")
 
+# pkg-config 配置
 set(GLib_DIR "E:/vcpkg/installed/x64-windows/share/glib-2.0")
 set(PKG_CONFIG_EXECUTABLE "D:/pkg-config_0.23-2_win64/bin/pkg-config.exe")
 find_package(PkgConfig REQUIRED)
@@ -43,13 +42,9 @@ find_package(PkgConfig REQUIRED)
 # 查找 OpenCV
 find_package(OpenCV REQUIRED PATHS "E:/vcpkg/installed/x64-windows" NO_DEFAULT_PATH)
 
-# ...（前面的内容保持不变，如设置编译器、GTK 包等）...
-
 # ================== [ LibTorch 设置 ] ==================
-
 # 设置 LibTorch 根目录
 set(LIBTORCH_ROOT "D:/libtorch")
-
 # 自动检测 Debug / Release 模式
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the build type." FORCE)
@@ -75,16 +70,23 @@ find_library(TORCH_LIBRARY NAMES torch PATHS ${TORCH_LIB_DIR} REQUIRED)
 find_library(TORCH_CPU_LIBRARY NAMES torch_cpu PATHS ${TORCH_LIB_DIR} REQUIRED)
 
 # 如果你使用了 CUDA，请确保 torch_cuda.lib 存在
-# find_library(TORCH_CUDA_LIBRARY NAMES torch_cuda PATHS ${TORCH_LIB_DIR} REQUIRED)
+ find_library(TORCH_CUDA_LIBRARY NAMES torch_cuda PATHS ${TORCH_LIB_DIR} REQUIRED)
 
 # 设置 TORCH_LIBRARIES
 set(TORCH_LIBRARIES ${TORCH_LIBRARY} ${TORCH_CPU_LIBRARY})
 
 # 如果你使用了 CUDA，启用下面一行
-# set(TORCH_LIBRARIES ${TORCH_LIBRARY} ${TORCH_CPU_LIBRARY} ${TORCH_CUDA_LIBRARY})
-
+set(TORCH_LIBRARIES ${TORCH_LIBRARY} ${TORCH_CPU_LIBRARY} ${TORCH_CUDA_LIBRARY})
 message(STATUS "TORCH_INCLUDE_DIRS = ${TORCH_INCLUDE_DIRS}")
 message(STATUS "TORCH_LIBRARIES = ${TORCH_LIBRARIES}")
+# GTK 4.0 配置
+set(GTK4_LIB_DIR "E:/vcpkg/installed/x64-windows/lib")
+set(GTK4_INCLUDE_DIR "E:/vcpkg/installed/x64-windows/include/gtk-4.0")
+set(GDK4_INCLUDE_DIR "E:/vcpkg/installed/x64-windows/include/gdk-4.0")
+include_directories(${GTK4_INCLUDE_DIR} ${GDK4_INCLUDE_DIR})
+# 查找 GTK 4.0
+pkg_check_modules(GTK4 REQUIRED gtk4)
+
 
 include_directories("E:/vcpkg/installed/x64-windows/include/glib-2.0")
 include_directories("E:/vcpkg/installed/x64-windows/include/gtk-3.0")
@@ -111,7 +113,6 @@ string(REPLACE "-I" "" GLIB_INCLUDE_PATHS "${GLIB_INCLUDE_PATHS}")
 
 add_executable(test_cpp WIN32 main.cpp)
 
-
 target_include_directories(test_cpp PUBLIC gtk-3
         ${glib2_inc}
         ${pando_lib}
@@ -125,6 +126,7 @@ target_include_directories(test_cpp PUBLIC gtk-3
 target_include_directories(test_cpp PUBLIC
         ${OpenCV_INCLUDE_DIRS}
         ${TORCH_INCLUDE_DIRS}
+        ${GTK4_INCLUDE_DIRS}
 )
 
 # 链接 OpenCV
@@ -151,7 +153,7 @@ target_link_libraries(
 
 
 target_link_libraries(test_cpp PUBLIC
-        gtk-3
+        gtk-4
         gdk-3
         glib-2.0
         gobject-2.0
