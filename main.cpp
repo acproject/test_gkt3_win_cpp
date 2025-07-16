@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <ctime>
 #include <iostream>
+#include <fstream>
 // AppData 结构体用于封装应用状态
 typedef struct {
     GtkWidget *result_label;
@@ -34,7 +35,13 @@ bool load_model(AppData *data, const std::string &model_path) {
         data->model_loaded = true;
         return true;
     } catch (const c10::Error &e) {
-        std::cerr << "Model load failed: " << e.msg() << std::endl;
+        std::string error_msg = "Model load failed: " + e.msg();
+        std::cerr << error_msg << std::endl;
+        std::ofstream log_file("load_error.log");
+        if (log_file.is_open()) {
+            log_file << error_msg << std::endl;
+            log_file.close();
+        }
         return false;
     }
 }
