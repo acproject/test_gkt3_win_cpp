@@ -219,6 +219,7 @@ add_custom_command(TARGET test_cpp POST_BUILD
         ${LIBTORCH_DLLS}
         ${GTK_DLLS}
         ${OPENCV_DLLS}
+        ${PROJECT_SOURCE_DIR}/imagenet_class_index.json
         $<TARGET_FILE_DIR:test_cpp>
 )
 
